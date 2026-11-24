@@ -16,20 +16,41 @@ button{margin-top:10px;padding:10px 20px;font-size:16px;background:#e94560;borde
 <div id="ui">Score: <span id="score">0</span><br><button id="restart" style="display:none">Restart</button></div>
 <script>
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),scoreEl=document.getElementById('score'),restartBtn=document.getElementById('restart');
-const sprites={};
-const names=['run1','run2','jump','stand','crouch'];
-let loaded=0;
-names.forEach(n=>{
-  const img=new Image();
-  img.onload=()=>{loaded++;if(loaded===names.length)start()};
-  img.src=n+'.png';
-  sprites[n]=img;
-});
 let player,obstacles,score,speed,gameOver,frame,animTick;
 function start(){
   player={x:180,y:220,vy:0,onGround:true,state:'run'};
   obstacles=[];score=0;speed=6;gameOver=false;frame=0;animTick=0;
   restartBtn.style.display='none';loop();
+}
+function drawFrog(x,y,state){
+  ctx.save();
+  ctx.translate(x,y);
+  // Body
+  ctx.fillStyle='#4caf50';
+  ctx.beginPath();ctx.ellipse(0,-20,25,35,0,0,Math.PI*2);ctx.fill();
+  // Belly
+  ctx.fillStyle='#8bc34a';
+  ctx.beginPath();ctx.ellipse(0,5,18,22,0,0,Math.PI*2);ctx.fill();
+  // Eyes
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-12,-35,10,0,Math.PI*2);ctx.arc(12,-35,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#2196f3';
+  ctx.beginPath();ctx.arc(-12,-35,5,0,Math.PI*2);ctx.arc(12,-35,5,0,Math.PI*2);ctx.fill();
+  // Shorts
+  ctx.fillStyle='#1565c0';
+  ctx.fillRect(-20,10,40,25);
+  // Boots
+  ctx.fillStyle='#5d4037';
+  ctx.fillRect(-22,35,18,15);ctx.fillRect(4,35,18,15);
+  // Arms
+  ctx.fillStyle='#4caf50';
+  if(state==='jump'){
+    ctx.fillRect(-40,-40,20,12);ctx.fillRect(20,-40,20,12);
+  } else {
+    const armSwing = Math.sin(animTick*0.3)*10;
+    ctx.fillRect(-35,armSwing,18,10);ctx.fillRect(17,-armSwing,18,10);
+  }
+  ctx.restore();
 }
 function loop(){
   if(gameOver)return;frame++;
@@ -39,11 +60,7 @@ function loop(){
   player.vy+=0.55;player.y+=player.vy;
   if(player.y>=220){player.y=220;player.vy=0;player.onGround=true;if(player.state!=='crouch')player.state='run'}
   animTick++;
-  let spr=sprites.run1;
-  if(player.state==='jump')spr=sprites.jump;
-  else if(player.state==='crouch')spr=sprites.crouch;
-  else spr=(Math.floor(animTick/8)%2===0)?sprites.run1:sprites.run2;
-  ctx.drawImage(spr,player.x-40,player.y-60,120,150);
+  drawFrog(player.x, player.y, player.state);
   if(frame%80===0){
     const high=Math.random()>0.65;
     obstacles.push({x:canvas.width+10,y:high?170:250,w:high?28:40,h:high?35:50,type:high?'fly':'rock'});
@@ -52,7 +69,7 @@ function loop(){
     o.x-=speed;
     if(o.type==='rock'){ctx.fillStyle='#6b4c3b';ctx.beginPath();ctx.ellipse(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2,0,0,Math.PI*2);ctx.fill()}
     else{ctx.fillStyle='#aaa';ctx.fillRect(o.x,o.y,o.w,o.h)}
-    if(player.x+35>o.x&&player.x<o.x+o.w&&player.y+30>o.y&&player.y<o.y+o.h&&player.onGround){gameOver=true;restartBtn.style.display='block'}
+    if(player.x+30>o.x&&player.x-30<o.x+o.w&&player.y+40>o.y&&player.y<o.y+o.h&&player.onGround){gameOver=true;restartBtn.style.display='block'}
   });
   obstacles=obstacles.filter(o=>o.x>-50);
   score++;scoreEl.textContent=Math.floor(score/8);
@@ -66,6 +83,7 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{if(e.code==='ArrowDown'&&player)player.state='run'});
 canvas.addEventListener('click',()=>{if(player&&player.onGround&&!gameOver){player.vy=-12.5;player.onGround=false;player.state='jump'}});
 restartBtn.onclick=start;
+start();
 </script>
 </body>
 </html>
